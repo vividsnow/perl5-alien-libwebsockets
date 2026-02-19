@@ -1,0 +1,16 @@
+NAME
+    Alien::libwebsockets - Find or build libwebsockets C library
+
+SYNOPSIS
+    use Alien::libwebsockets;
+    my $cflags = Alien::libwebsockets->cflags;
+    my $libs = Alien::libwebsockets->libs;
+
+DESCRIPTION
+    This Alien module provides libwebsockets for use by other Perl modules.
+    When built from source, it is configured with libev, SSL, zlib, and
+    permessage-deflate extension support.
+
+LICENSE
+    This library is free software; you can redistribute it and/or modify
+    it under the same terms as Perl itself.

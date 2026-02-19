@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test-linux-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        perl-version: ['5.38', '5.40']
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Perl
+      uses: shogo82148/actions-setup-perl@v1
+      with:
+        perl-version: ${{ matrix.perl-version }}
+        install-modules-with: cpanm
+        install-modules: |
+          URI
+          Alien::Build
+          Alien::cmake3
+
+    - name: Install System Dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake libev-dev libssl-dev zlib1g-dev
+
+    - name: Install System Dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake libev openssl zlib
+        echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig:$(brew --prefix libev)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+        echo "CMAKE_PREFIX_PATH=$(brew --prefix openssl):$(brew --prefix zlib):$(brew --prefix libev)" >> $GITHUB_ENV
+
+    - name: Build and Test
+      run: |
+        perl Makefile.PL
+        make
+        make test TEST_VERBOSE=1
+
+  test-freebsd:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Test on FreeBSD
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        prepare: |
+          pkg install -y cmake libev openssl zlib perl5 p5-App-cpanminus
+        run: |
+          cpanm --notest Alien::Build Alien::cmake3
+          perl Makefile.PL
+          make
+          make test TEST_VERBOSE=1
